@@ -2,333 +2,298 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BIST MaT-R Radar</title>
+
     <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
+        name="description"
+        content="BIST hisseleri için MaT-R teknik analiz ve tarama sistemi."
     >
 
-    <title>MATR BIST Radar</title>
-
-    <link rel="stylesheet" href="matr.css">
+    <link rel="stylesheet" href="./matr.css">
 </head>
 
 <body>
 
-<header class="topbar">
+<header class="site-header">
+    <div class="header-inner">
 
-    <div class="container">
+        <div>
+            <h1>📡 BIST MaT-R</h1>
 
-        <div class="brand">
-
-            <div class="brand-icon">
-                M
-            </div>
-
-            <div>
-                <h1>MATR BIST Radar</h1>
-
-                <p>
-                    MATR stratejisine göre günlük BIST taraması
-                </p>
-            </div>
-
+            <p class="subtitle">
+                BIST teknik analiz ve hisse tarama sistemi
+            </p>
         </div>
 
-        <div id="lastUpdate" class="update">
-            Veri yükleniyor...
+        <div class="header-status">
+            <span id="systemStatus">● Hazırlanıyor</span>
         </div>
 
     </div>
-
 </header>
 
 
 <main class="container">
 
-    <!-- ================================================= -->
     <!-- ÖZET -->
-    <!-- ================================================= -->
 
     <section class="summary-grid">
 
         <div class="summary-card">
-
-            <span>Toplam Hisse</span>
+            <span class="summary-title">
+                Toplam Hisse
+            </span>
 
             <strong id="totalStocks">
                 -
             </strong>
-
-        </div>
-
-
-        <div class="summary-card buy-card">
-
-            <span>AL Sinyali</span>
-
-            <strong id="buyStocks">
-                -
-            </strong>
-
         </div>
 
 
         <div class="summary-card">
+            <span class="summary-title">
+                MaT-R Sinyali
+            </span>
 
-            <span>Aktif Pozisyon</span>
-
-            <strong id="activePositions">
+            <strong id="signalStocks">
                 -
             </strong>
-
         </div>
 
 
         <div class="summary-card">
-
-            <span>Ortalama MATR Skoru</span>
+            <span class="summary-title">
+                Ortalama Skor
+            </span>
 
             <strong id="averageScore">
                 -
             </strong>
+        </div>
 
+
+        <div class="summary-card">
+            <span class="summary-title">
+                Güncelleme
+            </span>
+
+            <strong id="updateTime">
+                -
+            </strong>
         </div>
 
     </section>
 
 
-    <!-- ================================================= -->
-    <!-- FİLTRELER -->
-    <!-- ================================================= -->
+    <!-- KONTROLLER -->
 
     <section class="controls">
 
-        <div class="search-box">
+        <div class="control-group">
+
+            <label for="searchInput">
+                Hisse Ara
+            </label>
 
             <input
                 id="searchInput"
                 type="search"
-                placeholder="Hisse ara... ASELS, THYAO, TUPRS"
+                placeholder="ASELS, THYAO, GARAN..."
                 autocomplete="off"
             >
 
         </div>
 
 
-        <select id="signalFilter">
+        <div class="control-group">
 
-            <option value="all">
-                Tüm Sinyaller
-            </option>
+            <label for="signalFilter">
+                Sinyal
+            </label>
 
-            <option value="buy">
-                AL
-            </option>
+            <select id="signalFilter">
 
-            <option value="position">
-                POZİSYON
-            </option>
+                <option value="all">
+                    Tümü
+                </option>
 
-            <option value="wait">
-                BEKLE
-            </option>
+                <option value="strong">
+                    GÜÇLÜ
+                </option>
 
-        </select>
+                <option value="positive">
+                    POZİTİF
+                </option>
 
+                <option value="neutral">
+                    NÖTR
+                </option>
 
-        <select id="sortSelect">
+                <option value="weak">
+                    ZAYIF
+                </option>
 
-            <option value="score">
-                MATR Skoru
-            </option>
+                <option value="negative">
+                    NEGATİF
+                </option>
 
-            <option value="price">
-                Fiyat
-            </option>
-
-            <option value="ret21">
-                21 Gün Getiri
-            </option>
-
-            <option value="ret63">
-                3 Ay Getiri
-            </option>
-
-            <option value="ret126">
-                6 Ay Getiri
-            </option>
-
-            <option value="atr">
-                ATR
-            </option>
-
-        </select>
-
-    </section>
-
-
-    <!-- ================================================= -->
-    <!-- MATR AÇIKLAMASI -->
-    <!-- ================================================= -->
-
-    <section class="strategy-info">
-
-        <div>
-
-            <strong>MATR</strong>
-
-            <span>
-                EMA34 / SMA34 + MACD 3/5/2 + ATR17
-            </span>
+            </select>
 
         </div>
 
-        <div>
 
-            <span>
-                Zarar Kes:
-            </span>
+        <div class="control-group">
 
-            <strong>
-                ATR × 2.2
-            </strong>
+            <label for="sortSelect">
+                Sıralama
+            </label>
 
-        </div>
+            <select id="sortSelect">
 
-        <div>
+                <option value="score">
+                    MaT-R Skoru
+                </option>
 
-            <span>
-                Kâr Alma:
-            </span>
+                <option value="technical">
+                    Teknik
+                </option>
 
-            <strong>
-                %12 / %20
-            </strong>
+                <option value="momentum">
+                    Momentum
+                </option>
+
+                <option value="flow">
+                    Para Akışı
+                </option>
+
+                <option value="relative">
+                    Relatif Güç
+                </option>
+
+                <option value="risk">
+                    Risk
+                </option>
+
+                <option value="rsi">
+                    RSI
+                </option>
+
+                <option value="ret21">
+                    21 Gün
+                </option>
+
+                <option value="ret63">
+                    3 Ay
+                </option>
+
+                <option value="ret126">
+                    6 Ay
+                </option>
+
+            </select>
 
         </div>
 
     </section>
 
 
-    <!-- ================================================= -->
+    <!-- DURUM -->
+
+    <section class="info-bar">
+
+        <span id="stockCount">
+            Veri yükleniyor...
+        </span>
+
+        <button
+            id="refreshButton"
+            type="button">
+            ↻ Yenile
+        </button>
+
+    </section>
+
+
     <!-- TABLO -->
-    <!-- ================================================= -->
 
-    <section class="table-section">
+    <section class="table-container">
 
-        <div class="table-header">
+        <table id="stockTable">
 
-            <div>
+            <thead>
 
-                <h2>
-                    MATR Hisse Tarama
-                </h2>
+                <tr>
 
-                <span id="stockCount">
-                    -
-                </span>
+                    <th>#</th>
 
-            </div>
+                    <th>Hisse</th>
 
-        </div>
+                    <th>Fiyat</th>
 
+                    <th>MaT-R</th>
 
-        <div class="table-wrapper">
+                    <th>Sinyal</th>
 
-            <table>
+                    <th>Teknik</th>
 
-                <thead>
+                    <th>Momentum</th>
 
-                    <tr>
+                    <th>Para Akışı</th>
 
-                        <th>
-                            #
-                        </th>
+                    <th>Relatif</th>
 
-                        <th>
-                            Hisse
-                        </th>
+                    <th>Risk</th>
 
-                        <th>
-                            Fiyat
-                        </th>
+                    <th>RSI</th>
 
-                        <th>
-                            MATR
-                        </th>
+                    <th>21G</th>
 
-                        <th>
-                            Sinyal
-                        </th>
+                    <th>3A</th>
 
-                        <th>
-                            Trend
-                        </th>
+                    <th>6A</th>
 
-                        <th>
-                            MACD
-                        </th>
+                </tr>
 
-                        <th>
-                            ATR
-                        </th>
-
-                        <th>
-                            21G
-                        </th>
-
-                        <th>
-                            3A
-                        </th>
-
-                        <th>
-                            6A
-                        </th>
-
-                    </tr>
-
-                </thead>
+            </thead>
 
 
-                <tbody id="stockTableBody">
+            <tbody id="stockTableBody">
 
-                    <tr>
+                <tr>
 
-                        <td
-                            colspan="11"
-                            class="loading"
-                        >
-                            Veriler yükleniyor...
-                        </td>
+                    <td
+                        colspan="14"
+                        class="loading">
+                        Veriler yükleniyor...
+                    </td>
 
-                    </tr>
+                </tr>
 
-                </tbody>
+            </tbody>
 
-            </table>
-
-        </div>
+        </table>
 
     </section>
 
 </main>
 
 
-<!-- ===================================================== -->
-<!-- DETAY MODAL -->
-<!-- ===================================================== -->
+<!-- HİSSE DETAY MODALI -->
 
 <div
     id="stockModal"
     class="modal"
->
+    aria-hidden="true">
 
     <div class="modal-box">
 
         <button
-            id="closeModal"
-            class="close-button"
-        >
+            id="modalClose"
+            class="modal-close"
+            type="button"
+            aria-label="Kapat">
             ×
         </button>
 
@@ -337,7 +302,7 @@
 
             <div>
 
-                <h2 id="modalTitle">
+                <h2 id="modalCode">
                     -
                 </h2>
 
@@ -349,285 +314,33 @@
 
 
             <div
-                id="modalSignal"
-                class="modal-signal"
-            >
+                id="modalScore"
+                class="modal-score">
                 -
             </div>
 
         </div>
 
 
-        <div class="modal-score">
-
-            <span>
-                MATR SKORU
-            </span>
-
-            <strong id="modalScore">
-                -
-            </strong>
-
+        <div
+            id="modalSignal"
+            class="modal-signal">
+            -
         </div>
 
 
-        <!-- FİYAT BİLGİLERİ -->
-
-        <div class="detail-section">
-
-            <h3>
-                İşlem Seviyeleri
-            </h3>
-
-            <div class="detail-grid">
-
-                <div class="detail-card">
-
-                    <span>
-                        Güncel Fiyat
-                    </span>
-
-                    <strong id="detailPrice">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        Giriş Fiyatı
-                    </span>
-
-                    <strong id="detailEntry">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card danger-card">
-
-                    <span>
-                        Zarar Kes
-                    </span>
-
-                    <strong id="detailStop">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card profit-card">
-
-                    <span>
-                        Kâr Alma 1
-                    </span>
-
-                    <strong id="detailTP1">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card profit-card">
-
-                    <span>
-                        Kâr Alma 2
-                    </span>
-
-                    <strong id="detailTP2">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        ATR
-                    </span>
-
-                    <strong id="detailATR">
-                        -
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- TEKNİK -->
-
-        <div class="detail-section">
-
-            <h3>
-                Teknik Durum
-            </h3>
-
-            <div class="detail-grid">
-
-                <div class="detail-card">
-
-                    <span>
-                        EMA 34
-                    </span>
-
-                    <strong id="detailEMA">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        SMA 34
-                    </span>
-
-                    <strong id="detailSMA">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        MACD
-                    </span>
-
-                    <strong id="detailMACD">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        MACD Sinyal
-                    </span>
-
-                    <strong id="detailMACDSignal">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        Histogram
-                    </span>
-
-                    <strong id="detailHistogram">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        Trend
-                    </span>
-
-                    <strong id="detailTrend">
-                        -
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- PERFORMANS -->
-
-        <div class="detail-section">
-
-            <h3>
-                Performans
-            </h3>
-
-            <div class="detail-grid">
-
-                <div class="detail-card">
-
-                    <span>
-                        21 Gün
-                    </span>
-
-                    <strong id="detail21">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        3 Ay
-                    </span>
-
-                    <strong id="detail63">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        6 Ay
-                    </span>
-
-                    <strong id="detail126">
-                        -
-                    </strong>
-
-                </div>
-
-
-                <div class="detail-card">
-
-                    <span>
-                        Giriş Tarihi
-                    </span>
-
-                    <strong id="detailEntryDate">
-                        -
-                    </strong>
-
-                </div>
-
-            </div>
+        <div
+            id="modalDetails"
+            class="detail-grid">
 
         </div>
 
 
         <div class="modal-footer">
 
-            <small>
-                Bu ekran yatırım tavsiyesi değildir.
-                Sinyaller MATR algoritmasının teknik
-                hesaplamalarından oluşturulur.
-            </small>
+            <span>
+                MaT-R analiz verileri yatırım tavsiyesi değildir.
+            </span>
 
         </div>
 
@@ -636,7 +349,16 @@
 </div>
 
 
-<script src="matr.js"></script>
+<!-- HATA / YÜKLEME -->
+
+<div
+    id="toast"
+    class="toast"
+    aria-hidden="true">
+</div>
+
+
+<script src="./matr.js"></script>
 
 </body>
 </html>
