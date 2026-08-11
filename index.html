@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>BIST MaT-R Radar</title>
+
+<link rel="stylesheet" href="matr.css">
+
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <div>
+        <h1>📡 BIST MaT-R Radar</h1>
+
+        <p>
+            MaT-R stratejisi • MACD 3/5 • Sinyal 2 • EMA34/SMA34
+        </p>
+    </div>
+
+    <div id="lastUpdate">
+        Veri bekleniyor...
+    </div>
+
+</header>
+
+
+<main class="container">
+
+
+    <!-- =====================================================
+         DURUM
+    ====================================================== -->
+
+    <section class="status-panel">
+
+        <div id="systemStatus">
+            MaT-R motoru başlatılıyor...
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         ÖZET
+    ====================================================== -->
+
+    <section class="summary-grid">
+
+        <div class="summary-card">
+
+            <span>Toplam Hisse</span>
+
+            <strong id="totalStocks">
+                -
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card buy-card">
+
+            <span>AL Sinyali</span>
+
+            <strong id="buyStocks">
+                -
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card profit-card">
+
+            <span>Kâr Al</span>
+
+            <strong id="profitStocks">
+                -
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card sell-card">
+
+            <span>SAT</span>
+
+            <strong id="sellStocks">
+                -
+            </strong>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <span>Bekle</span>
+
+            <strong id="waitStocks">
+                -
+            </strong>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         FİLTRELER
+    ====================================================== -->
+
+    <section class="controls">
+
+        <input
+            id="search"
+            type="search"
+            placeholder="Hisse ara: ASELS, THYAO..."
+        >
+
+
+        <select id="signalFilter">
+
+            <option value="ALL">
+                Tüm Sinyaller
+            </option>
+
+            <option value="AL">
+                🟢 AL
+            </option>
+
+            <option value="KAR AL 1">
+                🟡 KAR AL 1
+            </option>
+
+            <option value="KAR AL 2">
+                🟡 KAR AL 2
+            </option>
+
+            <option value="SAT">
+                🔴 SAT
+            </option>
+
+            <option value="BEKLE">
+                ⚪ BEKLE
+            </option>
+
+        </select>
+
+
+        <select id="sortSelect">
+
+            <option value="signal">
+                Sinyale göre
+            </option>
+
+            <option value="price">
+                Fiyata göre
+            </option>
+
+            <option value="rsi">
+                RSI
+            </option>
+
+            <option value="adx">
+                ADX
+            </option>
+
+            <option value="volume">
+                Hacim
+            </option>
+
+            <option value="ret21">
+                21 Günlük Getiri
+            </option>
+
+        </select>
+
+    </section>
+
+
+    <!-- =====================================================
+         MATR PARAMETRELERİ
+    ====================================================== -->
+
+    <section class="strategy-info">
+
+        <div>
+            <span>MACD</span>
+            <strong>3 / 5</strong>
+        </div>
+
+        <div>
+            <span>Sinyal</span>
+            <strong>2</strong>
+        </div>
+
+        <div>
+            <span>Trend</span>
+            <strong>EMA34 &gt; SMA34</strong>
+        </div>
+
+        <div>
+            <span>ATR</span>
+            <strong>17</strong>
+        </div>
+
+        <div>
+            <span>Zarar Kes</span>
+            <strong>ATR × 2.2</strong>
+        </div>
+
+        <div>
+            <span>Kâr 1</span>
+            <strong>%12</strong>
+        </div>
+
+        <div>
+            <span>Kâr 2</span>
+            <strong>%20</strong>
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         TABLO
+    ====================================================== -->
+
+    <section class="table-container">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>#</th>
+
+                    <th>Hisse</th>
+
+                    <th>Fiyat</th>
+
+                    <th>MaT-R</th>
+
+                    <th>MACD</th>
+
+                    <th>Sinyal</th>
+
+                    <th>ATR</th>
+
+                    <th>Zarar Kes</th>
+
+                    <th>Kâr 1</th>
+
+                    <th>Kâr 2</th>
+
+                    <th>EMA34</th>
+
+                    <th>SMA34</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="stockTableBody">
+
+                <tr>
+
+                    <td
+                        colspan="12"
+                        class="loading"
+                    >
+                        MaT-R verileri yükleniyor...
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </section>
+
+
+</main>
+
+
+<!-- =========================================================
+     DETAY MODALI
+========================================================= -->
+
+<div
+    id="stockModal"
+    class="modal"
+>
+
+    <div class="modal-box">
+
+        <button
+            id="closeModal"
+            class="close-button"
+        >
+            ✕
+        </button>
+
+
+        <h2 id="modalTitle">
+            Hisse
+        </h2>
+
+
+        <div
+            id="modalSignal"
+            class="modal-signal"
+        >
+            -
+        </div>
+
+
+        <div
+            id="modalContent"
+            class="detail-grid"
+        >
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MATR MOTORU
+========================================================= -->
+
+<script src="matr.js"></script>
+
+
+<script>
+
+/* =========================================================
+   AYARLAR
+========================================================= */
+
+const DATA_URL = "./data.json";
+
+
+let stocks = [];
+
+let filteredStocks = [];
+
+
+/* =========================================================
+   GÜVENLİ SAYI
+========================================================= */
+
+function number(value, fallback = 0) {
+
+    const n = Number(value);
+
+    return Number.isFinite(n)
+        ? n
+        : fallback;
+
+}
+
+
+/* =========================================================
+   YÜZDE
+========================================================= */
+
+function percent(value) {
+
+    const n = number(value);
+
+    return (
+        n >= 0 ? "+" : ""
+    ) + n.toFixed(2) + "%";
+
+}
+
+
+/* =========================================================
+   FİYAT
+========================================================= */
+
+function price(value) {
+
+    return number(value)
+        .toFixed(2);
+
+}
+
+
+/* =========================================================
+   SİNYAL RENK
+========================================================= */
+
+function signalClass(signal) {
+
+    switch (signal) {
+
+        case "AL":
+            return "signal-buy";
+
+        case "KAR AL 1":
+        case "KAR AL 2":
+            return "signal-profit";
+
+        case "SAT":
+            return "signal-sell";
+
+        default:
+            return "signal-wait";
+
+    }
+
+}
+
+
+/* =========================================================
+   SİNYAL SIRASI
+========================================================= */
+
+function signalRank(signal) {
+
+    switch (signal) {
+
+        case "AL":
+            return 1;
+
+        case "KAR AL 2":
+            return 2;
+
+        case "KAR AL 1":
+            return 3;
+
+        case "SAT":
+            return 4;
+
+        case "BEKLE":
+        default:
+            return 5;
+
+    }
+
+}
+
+
+/* =========================================================
+   JSON VERİSİNİ MATR FORMATINA ÇEVİR
+========================================================= */
+
+function normalizeStock(stock) {
+
+    /*
+       data.json'ın iki farklı formatını
+       kabul ediyoruz.
+
+       Yeni format:
+
+       {
+          code,
+          name,
+          price,
+          history: [...]
+       }
+
+       veya doğrudan:
+
+       {
+          code,
+          name,
+          close,
+          high,
+          low
+       }
+    */
+
+
+    return {
+
+        ...stock,
+
+        code:
+            String(
+                stock.code ||
+                stock.symbol ||
+                ""
+            ).toUpperCase(),
+
+        name:
+            String(
+                stock.name ||
+                ""
+            )
+
+    };
+
+}
+
+
+/* =========================================================
+   MATR HESAPLA
+========================================================= */
+
+function calculateStock(stock) {
+
+    const normalized =
+        normalizeStock(stock);
+
+
+    /*
+       Eğer history mevcutsa
+       doğrudan MaT-R motoruna gönder.
+    */
+
+    if (
+        Array.isArray(
+            normalized.history
+        )
+        &&
+        normalized.history.length >= 50
+    ) {
+
+        const history =
+            normalized.history.map(item => ({
+
+                date:
+                    item.date,
+
+                close:
+                    number(
+                        item.close ??
+                        item.Close
+                    ),
+
+                high:
+                    number(
+                        item.high ??
+                        item.High
+                    ),
+
+                low:
+                    number(
+                        item.low ??
+                        item.Low
+                    )
+
+            }));
+
+
+        const matr =
+            window.MATR.calculateMATR(
+                history
+            );
+
+
+        return {
+
+            ...normalized,
+
+            matr,
+
+            price:
+                matr.price,
+
+            signal:
+                matr.signal,
+
+            macd:
+                matr.macd.value,
+
+            macdSignal:
+                matr.macd.signal,
+
+            atr:
+                matr.atr,
+
+            stopLoss:
+                matr.stopLoss,
+
+            takeProfit1:
+                matr.takeProfit1,
+
+            takeProfit2:
+                matr.takeProfit2,
+
+            ema34:
+                matr.trend.ema34,
+
+            sma34:
+                matr.trend.sma34,
+
+            trendUp:
+                matr.trendUp,
+
+            buySignal:
+                matr.buySignal
+
+        };
+
+    }
+
+
+    /*
+       Eğer data.json zaten hesaplanmış
+       MATR verisi içeriyorsa bunu kullan.
+    */
+
+    return {
+
+        ...normalized,
+
+        price:
+            number(normalized.price),
+
+        signal:
+            normalized.signal ||
+            "BEKLE",
+
+        macd:
+            number(normalized.macd),
+
+        macdSignal:
+            number(normalized.macdSignal),
+
+        atr:
+            number(normalized.atr),
+
+        stopLoss:
+            number(normalized.stopLoss),
+
+        takeProfit1:
+            number(normalized.takeProfit1),
+
+        takeProfit2:
+            number(normalized.takeProfit2),
+
+        ema34:
+            number(normalized.ema34),
+
+        sma34:
+            number(normalized.sma34)
+
+    };
+
+}
+
+
+/* =========================================================
+   TABLO
+========================================================= */
+
+function render() {
+
+    const body =
+        document.getElementById(
+            "stockTableBody"
+        );
+
+
+    const search =
+        document
+            .getElementById("search")
+            .value
+            .toLowerCase()
+            .trim();
+
+
+    const signal =
+        document
+            .getElementById("signalFilter")
+            .value;
+
+
+    const sort =
+        document
+            .getElementById("sortSelect")
+            .value;
+
+
+    filteredStocks =
+        stocks.filter(stock => {
+
+
+            const matchesSearch =
+
+                !search ||
+
+                stock.code
+                    .toLowerCase()
+                    .includes(search) ||
+
+                stock.name
+                    .toLowerCase()
+                    .includes(search);
+
+
+            const matchesSignal =
+
+                signal === "ALL" ||
+
+                stock.signal === signal;
+
+
+            return (
+                matchesSearch &&
+                matchesSignal
+            );
+
+        });
+
+
+    filteredStocks.sort(
+        (a, b) => {
+
+            switch (sort) {
+
+                case "price":
+                    return (
+                        number(b.price) -
+                        number(a.price)
+                    );
+
+                case "rsi":
+                    return (
+                        number(b.rsi) -
+                        number(a.rsi)
+                    );
+
+                case "adx":
+                    return (
+                        number(b.adx) -
+                        number(a.adx)
+                    );
+
+                case "volume":
+                    return (
+                        number(b.volumeRatio) -
+                        number(a.volumeRatio)
+                    );
+
+                case "ret21":
+                    return (
+                        number(b.ret21) -
+                        number(a.ret21)
+                    );
+
+                case "signal":
+                default:
+                    return (
+                        signalRank(a.signal) -
+                        signalRank(b.signal)
+                    );
+
+            }
+
+        }
+    );
+
+
+    if (!filteredStocks.length) {
+
+        body.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="12"
+                    class="loading"
+                >
+                    Hisse bulunamadı.
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    body.innerHTML =
+        filteredStocks
+            .map(
+                (stock, index) => `
+
+                <tr
+                    onclick="showDetails(${index})"
+                >
+
+                    <td>
+                        ${index + 1}
+                    </td>
+
+
+                    <td>
+
+                        <strong>
+                            ${escapeHTML(stock.code)}
+                        </strong>
+
+                        <small>
+                            ${escapeHTML(stock.name)}
+                        </small>
+
+                    </td>
+
+
+                    <td>
+                        ${price(stock.price)}
+                    </td>
+
+
+                    <td>
+
+                        <span
+                            class="
+                                matr-badge
+                                ${signalClass(stock.signal)}
+                            "
+                        >
+                            ${stock.signal}
+                        </span>
+
+                    </td>
+
+
+                    <td>
+                        ${number(stock.macd).toFixed(4)}
+                    </td>
+
+
+                    <td>
+                        ${number(stock.macdSignal).toFixed(4)}
+                    </td>
+
+
+                    <td>
+                        ${number(stock.atr).toFixed(2)}
+                    </td>
+
+
+                    <td class="stop">
+                        ${price(stock.stopLoss)}
+                    </td>
+
+
+                    <td class="profit">
+                        ${price(stock.takeProfit1)}
+                    </td>
+
+
+                    <td class="profit">
+                        ${price(stock.takeProfit2)}
+                    </td>
+
+
+                    <td>
+                        ${price(stock.ema34)}
+                    </td>
+
+
+                    <td>
+                        ${price(stock.sma34)}
+                    </td>
+
+                </tr>
+
+            `
+            )
+            .join("");
+
+}
+
+
+/* =========================================================
+   ÖZET
+========================================================= */
+
+function updateSummary() {
+
+    const total =
+        stocks.length;
+
+
+    const buy =
+        stocks.filter(
+            x => x.signal === "AL"
+        ).length;
+
+
+    const profit =
+        stocks.filter(
+            x =>
+                x.signal === "KAR AL 1" ||
+                x.signal === "KAR AL 2"
+        ).length;
+
+
+    const sell =
+        stocks.filter(
+            x => x.signal === "SAT"
+        ).length;
+
+
+    const wait =
+        stocks.filter(
+            x => x.signal === "BEKLE"
+        ).length;
+
+
+    document.getElementById(
+        "totalStocks"
+    ).textContent = total;
+
+
+    document.getElementById(
+        "buyStocks"
+    ).textContent = buy;
+
+
+    document.getElementById(
+        "profitStocks"
+    ).textContent = profit;
+
+
+    document.getElementById(
+        "sellStocks"
+    ).textContent = sell;
+
+
+    document.getElementById(
+        "waitStocks"
+    ).textContent = wait;
+
+
+    document.getElementById(
+        "systemStatus"
+    ).textContent =
+
+        `MaT-R aktif • ${total} hisse • ` +
+        `${buy} AL • ` +
+        `${profit} Kâr Al • ` +
+        `${sell} SAT • ` +
+        `${wait} BEKLE`;
+
+}
+
+
+/* =========================================================
+   DETAY
+========================================================= */
+
+function showDetails(index) {
+
+    const stock =
+        filteredStocks[index];
+
+
+    if (!stock) {
+        return;
+    }
+
+
+    document.getElementById(
+        "modalTitle"
+    ).textContent =
+
+        `${stock.code} • ${stock.name}`;
+
+
+    const signalElement =
+        document.getElementById(
+            "modalSignal"
+        );
+
+
+    signalElement.className =
+        "modal-signal " +
+        signalClass(stock.signal);
+
+
+    signalElement.textContent =
+        stock.signal;
+
+
+    document.getElementById(
+        "modalContent"
+    ).innerHTML = `
+
+        ${detail(
+            "Fiyat",
+            price(stock.price)
+        )}
+
+        ${detail(
+            "MaT-R Sinyali",
+            stock.signal
+        )}
+
+        ${detail(
+            "MACD",
+            number(stock.macd).toFixed(5)
+        )}
+
+        ${detail(
+            "MACD Sinyal",
+            number(stock.macdSignal).toFixed(5)
+        )}
+
+        ${detail(
+            "ATR 17",
+            number(stock.atr).toFixed(3)
+        )}
+
+        ${detail(
+            "Zarar Kes",
+            price(stock.stopLoss)
+        )}
+
+        ${detail(
+            "Kâr Alma 1",
+            price(stock.takeProfit1)
+        )}
+
+        ${detail(
+            "Kâr Alma 2",
+            price(stock.takeProfit2)
+        )}
+
+        ${detail(
+            "EMA 34",
+            price(stock.ema34)
+        )}
+
+        ${detail(
+            "SMA 34",
+            price(stock.sma34)
+        )}
+
+        ${detail(
+            "Trend",
+            stock.trendUp
+                ? "YUKARI"
+                : "AŞAĞI"
+        )}
+
+        ${detail(
+            "MACD Kesişimi",
+            stock.buySignal
+                ? "YUKARI KESİŞİM"
+                : "YOK"
+        )}
+
+    `;
+
+
+    document.getElementById(
+        "stockModal"
+    ).style.display = "flex";
+
+}
+
+
+/* =========================================================
+   DETAY KUTUSU
+========================================================= */
+
+function detail(title, value) {
+
+    return `
+
+        <div class="detail">
+
+            <span>
+                ${title}
+            </span>
+
+            <strong>
+                ${escapeHTML(value)}
+            </strong>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================================================
+   MODAL KAPAT
+========================================================= */
+
+function closeModal() {
+
+    document.getElementById(
+        "stockModal"
+    ).style.display = "none";
+
+}
+
+
+/* =========================================================
+   HTML GÜVENLİĞİ
+========================================================= */
+
+function escapeHTML(value) {
+
+    return String(
+        value ?? ""
+    )
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+/* =========================================================
+   VERİ YÜKLE
+========================================================= */
+
+async function loadData() {
+
+    try {
+
+        const response =
+            await fetch(
+                DATA_URL +
+                "?v=" +
+                Date.now()
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "data.json yüklenemedi. HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!Array.isArray(data)) {
+
+            throw new Error(
+                "data.json liste formatında değil."
+            );
+
+        }
+
+
+        stocks =
+            data
+                .map(calculateStock)
+                .filter(
+                    x => x.code
+                );
+
+
+        updateSummary();
+
+        render();
+
+
+        document.getElementById(
+            "lastUpdate"
+        ).textContent =
+
+            "Son yükleme: " +
+            new Date()
+                .toLocaleString("tr-TR");
+
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        document.getElementById(
+            "systemStatus"
+        ).innerHTML =
+
+            `<span class="error">
+                MaT-R verisi yüklenemedi:
+                ${escapeHTML(error.message)}
+            </span>`;
+
+
+        document.getElementById(
+            "stockTableBody"
+        ).innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="12"
+                    class="loading"
+                >
+
+                    data.json kontrol edilmeli.
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+}
+
+
+/* =========================================================
+   EVENTLER
+========================================================= */
+
+document
+    .getElementById("search")
+    .addEventListener(
+        "input",
+        render
+    );
+
+
+document
+    .getElementById("signalFilter")
+    .addEventListener(
+        "change",
+        render
+    );
+
+
+document
+    .getElementById("sortSelect")
+    .addEventListener(
+        "change",
+        render
+    );
+
+
+document
+    .getElementById("closeModal")
+    .addEventListener(
+        "click",
+        closeModal
+    );
+
+
+document
+    .getElementById("stockModal")
+    .addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target.id ===
+                "stockModal"
+            ) {
+
+                closeModal();
+
+            }
+
+        }
+    );
+
+
+/* =========================================================
+   BAŞLAT
+========================================================= */
+
+loadData();
+
+</script>
+
+</body>
+</html>
