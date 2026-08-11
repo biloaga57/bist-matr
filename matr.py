@@ -1,4 +1,31 @@
+# matr.py
+# ============================================================
+# BIST MaT-R
+# TradingView MaT-R stratejisinin Python veri tarayıcısı
+#
+# Mantık:
+#   Trend      : EMA34 / SMA34
+#   MACD       : EMA/SMA 3 - EMA/SMA 5
+#   Sinyal     : 2 periyot
+#   AL         : MACD signal'i yukarı keser + SMA34 < EMA34
+#   ATR        : 17
+#   Stop       : Giriş - 2.2 * ATR
+#   TP1        : +12%
+#   TP2        : +20%
+#
+# Çıktı:
+#   data.json
+#
+# Kurulum:
+#   pip install -r requirements.txt
+#
+# Çalıştırma:
+#   python matr.py
+# ============================================================
+
+import io
 import json
+import math
 import time
 from pathlib import Path
 
@@ -8,47 +35,52 @@ import requests
 import yfinance as yf
 
 
-# =========================================================
-# MATR BIST RADAR
-# Pine Script MATR mantığının Python karşılığı
-# =========================================================
+# ============================================================
+# AYARLAR
+# ============================================================
 
 SYMBOL_URL = (
-    "https://raw.githubusercontent.com/ahmeterenodaci/"
+    "https://raw.githubusercontent.com/"
+    "ahmeterenodaci/"
     "Istanbul-Stock-Exchange--BIST--including-symbols-and-logos/"
     "main/bist.csv"
 )
 
-OUTPUT_FILE = "data.json"
+OUTPUT_FILE = Path("data.json")
 
-BATCH_SIZE = 20
+BATCH_SIZE = 25
 
-# MATR ayarları
-TREND_PERIOD = 34
+DOWNLOAD_PERIOD = "2y"
+DOWNLOAD_INTERVAL = "1d"
 
-MACD_FAST = 3
-MACD_SLOW = 5
-MACD_SIGNAL = 2
+# MaT-R
+KUR_PER = 34
+
+HIZLI_PER = 3
+YAVAS_PER = 5
+SINYAL_PER = 2
+
+SMA_KAYNAK = False
+SMA_SIGNAL = True
 
 ATR_PERIOD = 17
-ATR_MULTIPLIER = 2.2
+STOP_MULTIPLIER = 2.2
 
 TP1_PERCENT = 12.0
 TP2_PERCENT = 20.0
 
-HISTORY_PERIOD = "2y"
-INTERVAL = "1d"
+MIN_HISTORY = 250
 
 
-# =========================================================
-# YARDIMCI
-# =========================================================
+# ============================================================
+# GENEL YARDIMCILAR
+# ============================================================
 
 def safe_float(value, default=0.0):
     try:
         value = float(value)
 
-        if np.isfinite(value):
+        if math.isfinite(value):
             return value
 
     except Exception:
@@ -61,7 +93,7 @@ def finite_or_none(value):
     try:
         value = float(value)
 
-        if np.isfinite(value):
+        if math.isfinite(value):
             return value
 
     except Exception:
@@ -70,98 +102,16 @@ def finite_or_none(value):
     return None
 
 
-# =========================================================
-# EMA
-# =========================================================
-
-def ema(series, period):
-    """
-    Pine'daki EMA davranışına yakın hesaplama.
-    """
-
-    return series.ewm(
-        span=period,
-        adjust=False,
-        min_periods=1
-    ).mean()
+def clean_series(series):
+    return pd.to_numeric(
+        series,
+        errors="coerce"
+    ).dropna()
 
 
-# =========================================================
-# SMA
-# =========================================================
-
-def sma(series, period):
-
-    return series.rolling(
-        period,
-        min_periods=period
-    ).mean()
-
-
-# =========================================================
-# ATR
-# =========================================================
-
-def atr(high, low, close, period=17):
-    """
-    Pine kodundaki özel ATR hesabı:
-
-    Tr =
-        max(
-            high-low,
-            abs(high-close[1]),
-            abs(low-close[1])
-        )
-
-    ATR =
-        ATR[1] + (TR-ATR[1])/period
-    """
-
-    previous_close = close.shift(1)
-
-    tr1 = high - low
-
-    tr2 = (high - previous_close).abs()
-
-    tr3 = (low - previous_close).abs()
-
-    tr = pd.concat(
-        [tr1, tr2, tr3],
-        axis=1
-    ).max(axis=1)
-
-    result = np.zeros(len(tr))
-
-    values = tr.to_numpy(dtype=float)
-
-    if len(values) == 0:
-        return pd.Series(
-            dtype=float,
-            index=tr.index
-        )
-
-    result[0] = values[0]
-
-    for i in range(1, len(values)):
-
-        current = values[i]
-
-        previous = result[i - 1]
-
-        result[i] = (
-            previous
-            + (current - previous) / period
-        )
-
-    return pd.Series(
-        result,
-        index=tr.index
-    )
-
-
-# =========================================================
+# ============================================================
 # HİSSELERİ AL
-# =========================================================
+# ============================================================
 
 def get_symbols():
 
@@ -175,28 +125,19 @@ def get_symbols():
     response.raise_for_status()
 
     df = pd.read_csv(
-        pd.io.common.StringIO(response.text)
+        io.StringIO(response.text)
     )
 
-    columns = {
-        str(c).lower(): c
-        for c in df.columns
-    }
-
-    symbol_column = columns.get("symbol")
-
-    if symbol_column is None:
+    if "symbol" not in df.columns:
         raise RuntimeError(
             "bist.csv içerisinde symbol sütunu bulunamadı."
         )
 
-    name_column = (
-        columns.get("name")
-        or columns.get("company")
-    )
+    if "name" not in df.columns:
+        df["name"] = ""
 
     df["symbol"] = (
-        df[symbol_column]
+        df["symbol"]
         .astype(str)
         .str.upper()
         .str.strip()
@@ -207,17 +148,10 @@ def get_symbols():
         )
     )
 
-    if name_column:
-        df["company_name"] = (
-            df[name_column]
-            .astype(str)
-            .str.strip()
-        )
-    else:
-        df["company_name"] = ""
-
     df = df[
-        df["symbol"].str.len().between(2, 6)
+        df["symbol"]
+        .str.len()
+        .between(2, 6)
     ]
 
     df = df.drop_duplicates(
@@ -227,7 +161,7 @@ def get_symbols():
     symbols = dict(
         zip(
             df["symbol"],
-            df["company_name"]
+            df["name"].fillna("")
         )
     )
 
@@ -238,202 +172,333 @@ def get_symbols():
     return symbols
 
 
-# =========================================================
-# YAHOO VERİSİNİ DÜZELT
-# =========================================================
+# ============================================================
+# EMA
+# ============================================================
 
-def normalize_dataframe(df):
+def ema(series, period):
 
-    if df is None or df.empty:
-        return None
+    return series.ewm(
+        span=period,
+        adjust=False,
+        min_periods=1
+    ).mean()
 
-    result = df.copy()
 
-    # MultiIndex varsa düzelt
-    if isinstance(
-        result.columns,
-        pd.MultiIndex
-    ):
+# ============================================================
+# SMA
+# ============================================================
 
-        result.columns = [
-            str(x[0])
-            for x in result.columns
-        ]
+def sma(series, period):
 
-    required = [
-        "Open",
-        "High",
-        "Low",
-        "Close",
-        "Volume"
-    ]
+    return series.rolling(
+        window=period,
+        min_periods=period
+    ).mean()
 
-    for column in required:
 
-        if column not in result.columns:
-            return None
+# ============================================================
+# ATR
+#
+# Pine kodundaki özel Atr() fonksiyonunun mantığı:
+#
+# atr := nz(
+#   atr[1] + (Tr - atr[1]) / p,
+#   Tr
+# )
+#
+# Bu Wilder tipi recursive ATR'dir.
+# ============================================================
 
-        result[column] = pd.to_numeric(
-            result[column],
-            errors="coerce"
+def atr_pine(high, low, close, period):
+
+    previous_close = close.shift(1)
+
+    tr1 = high - low
+
+    tr2 = (
+        high - previous_close
+    ).abs()
+
+    tr3 = (
+        low - previous_close
+    ).abs()
+
+    true_range = pd.concat(
+        [
+            tr1,
+            tr2,
+            tr3
+        ],
+        axis=1
+    ).max(axis=1)
+
+    values = []
+
+    previous_atr = None
+
+    for tr in true_range:
+
+        tr = safe_float(tr)
+
+        if previous_atr is None:
+
+            current_atr = tr
+
+        else:
+
+            current_atr = (
+                previous_atr
+                + (tr - previous_atr)
+                / period
+            )
+
+        values.append(
+            current_atr
         )
 
-    result = result.dropna(
-        subset=[
-            "High",
-            "Low",
-            "Close"
-        ]
+        previous_atr = current_atr
+
+    return pd.Series(
+        values,
+        index=true_range.index,
+        dtype=float
     )
 
-    return result
 
+# ============================================================
+# MACD
+# ============================================================
 
-# =========================================================
-# TEK HİSSE VERİSİ
-# =========================================================
+def calculate_macd(close):
 
-def get_stock_data(symbol):
+    if SMA_KAYNAK:
 
-    ticker = symbol + ".IS"
-
-    try:
-
-        data = yf.download(
-            ticker,
-            period=HISTORY_PERIOD,
-            interval=INTERVAL,
-            auto_adjust=True,
-            progress=False,
-            threads=False
+        fast_ma = sma(
+            close,
+            HIZLI_PER
         )
 
-        data = normalize_dataframe(data)
-
-        if data is None:
-            return None
-
-        if len(data) < 250:
-            return None
-
-        return data
-
-    except Exception as error:
-
-        print(
-            f"{symbol}: veri alınamadı -> {error}"
+        slow_ma = sma(
+            close,
+            YAVAS_PER
         )
 
-        return None
+    else:
 
+        fast_ma = ema(
+            close,
+            HIZLI_PER
+        )
 
-# =========================================================
-# MATR HESAPLA
-# =========================================================
+        slow_ma = ema(
+            close,
+            YAVAS_PER
+        )
 
-def calculate_matr(symbol, name, data):
-
-    if data is None or len(data) < 250:
-        return None
-
-    close = data["Close"]
-    high = data["High"]
-    low = data["Low"]
-
-    # -----------------------------------------------------
-    # TREND
-    # -----------------------------------------------------
-
-    trend_ema = ema(
-        close,
-        TREND_PERIOD
+    macd = (
+        fast_ma
+        - slow_ma
     )
 
-    trend_sma = sma(
-        close,
-        TREND_PERIOD
+    if SMA_SIGNAL:
+
+        signal = sma(
+            macd,
+            SINYAL_PER
+        )
+
+    else:
+
+        signal = ema(
+            macd,
+            SINYAL_PER
+        )
+
+    histogram = (
+        macd
+        - signal
     )
 
-    # -----------------------------------------------------
-    # MACD
-    # -----------------------------------------------------
-
-    fast_ma = ema(
-        close,
-        MACD_FAST
-    )
-
-    slow_ma = ema(
-        close,
-        MACD_SLOW
-    )
-
-    macd = fast_ma - slow_ma
-
-    signal = sma(
+    return (
+        fast_ma,
+        slow_ma,
         macd,
-        MACD_SIGNAL
+        signal,
+        histogram
     )
 
-    histogram = macd - signal
 
-    # -----------------------------------------------------
+# ============================================================
+# CROSSOVER
+#
+# Pine:
+# ta.crossover(macd, signal)
+#
+# Şart:
+# önce MACD <= signal
+# şimdi MACD > signal
+# ============================================================
+
+def crossover(series_a, series_b):
+
+    previous_a = series_a.shift(1)
+    previous_b = series_b.shift(1)
+
+    return (
+        (previous_a <= previous_b)
+        &
+        (series_a > series_b)
+    )
+
+
+# ============================================================
+# MA-TREND
+# ============================================================
+
+def calculate_trend(close):
+
+    ema34 = ema(
+        close,
+        KUR_PER
+    )
+
+    sma34 = sma(
+        close,
+        KUR_PER
+    )
+
+    trend_condition = (
+        sma34 < ema34
+    )
+
+    return (
+        ema34,
+        sma34,
+        trend_condition
+    )
+
+
+# ============================================================
+# MA-T-R ANA SİNYAL
+# ============================================================
+
+def calculate_strategy(data):
+
+    close = pd.to_numeric(
+        data["Close"],
+        errors="coerce"
+    )
+
+    high = pd.to_numeric(
+        data["High"],
+        errors="coerce"
+    )
+
+    low = pd.to_numeric(
+        data["Low"],
+        errors="coerce"
+    )
+
+    volume = pd.to_numeric(
+        data["Volume"],
+        errors="coerce"
+    ).fillna(0)
+
+    frame = pd.concat(
+        [
+            close.rename("Close"),
+            high.rename("High"),
+            low.rename("Low"),
+            volume.rename("Volume")
+        ],
+        axis=1
+    )
+
+    frame = frame.dropna(
+        subset=[
+            "Close",
+            "High",
+            "Low"
+        ]
+    )
+
+    if len(frame) < MIN_HISTORY:
+        return None
+
+    close = frame["Close"]
+    high = frame["High"]
+    low = frame["Low"]
+    volume = frame["Volume"]
+
+    # --------------------------------------------------------
+    # TREND
+    # --------------------------------------------------------
+
+    ema34, sma34, trend_condition = (
+        calculate_trend(close)
+    )
+
+    # --------------------------------------------------------
+    # MACD
+    # --------------------------------------------------------
+
+    (
+        fast_ma,
+        slow_ma,
+        macd,
+        signal,
+        histogram
+    ) = calculate_macd(close)
+
+    # --------------------------------------------------------
+    # CROSSOVER
+    # --------------------------------------------------------
+
+    entry_signal = (
+        crossover(
+            macd,
+            signal
+        )
+        &
+        trend_condition
+    )
+
+    # --------------------------------------------------------
     # ATR
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
-    atr_series = atr(
+    atr_series = atr_pine(
         high,
         low,
         close,
         ATR_PERIOD
     )
 
-    # -----------------------------------------------------
-    # AL SİNYALİ
-    #
-    # Pine:
-    #
-    # entry_long =
-    # crossover(macd, signal)
-    # and oncu2 < oncu1
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # SON BAR
+    # --------------------------------------------------------
 
-    macd_previous = macd.shift(1)
-
-    signal_previous = signal.shift(1)
-
-    crossover = (
-        (macd_previous <= signal_previous)
-        &
-        (macd > signal)
-    )
-
-    trend_condition = (
-        trend_sma < trend_ema
-    )
-
-    entry_signal = (
-        crossover
-        &
-        trend_condition
-    )
-
-    # -----------------------------------------------------
-    # SON DEĞERLER
-    # -----------------------------------------------------
-
-    last = data.iloc[-1]
+    last = frame.index[-1]
 
     price = safe_float(
         close.iloc[-1]
     )
 
     current_ema34 = safe_float(
-        trend_ema.iloc[-1]
+        ema34.iloc[-1]
     )
 
     current_sma34 = safe_float(
-        trend_sma.iloc[-1]
+        sma34.iloc[-1]
+    )
+
+    current_fast = safe_float(
+        fast_ma.iloc[-1]
+    )
+
+    current_slow = safe_float(
+        slow_ma.iloc[-1]
     )
 
     current_macd = safe_float(
@@ -444,7 +509,7 @@ def calculate_matr(symbol, name, data):
         signal.iloc[-1]
     )
 
-    current_histogram = safe_float(
+    current_hist = safe_float(
         histogram.iloc[-1]
     )
 
@@ -452,46 +517,39 @@ def calculate_matr(symbol, name, data):
         atr_series.iloc[-1]
     )
 
-    buy_signal = bool(
+    current_volume = safe_float(
+        volume.iloc[-1]
+    )
+
+    # --------------------------------------------------------
+    # SON AL SİNYALİ
+    # --------------------------------------------------------
+
+    buy_now = bool(
         entry_signal.iloc[-1]
     )
 
-    # -----------------------------------------------------
-    # SON AL SİNYALİNİ BUL
-    # -----------------------------------------------------
-
+    # Son AL sinyalinin bulunduğu bar
     signal_positions = np.where(
-        entry_signal.fillna(False).to_numpy()
+        entry_signal.fillna(False).values
     )[0]
 
     last_entry_index = None
 
     if len(signal_positions):
 
-        last_entry_index = int(
+        last_entry_index = (
             signal_positions[-1]
         )
 
-    # -----------------------------------------------------
-    # POZİSYON BİLGİSİ
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # SON AL SİNYALİNE GÖRE GİRİŞ FİYATI
+    # --------------------------------------------------------
 
     entry_price = None
-
-    stop_price = None
-
-    tp1_price = None
-
-    tp2_price = None
-
-    position_active = False
-
     entry_date = None
-
-    # -----------------------------------------------------
-    # SON AL SİNYALİNDEN SONRA
-    # ZARAR KES / KAR AL
-    # -----------------------------------------------------
+    entry_atr = None
+    bars_since_entry = None
 
     if last_entry_index is not None:
 
@@ -499,141 +557,155 @@ def calculate_matr(symbol, name, data):
             close.iloc[last_entry_index]
         )
 
+        entry_date = str(
+            close.index[last_entry_index]
+        )[:10]
+
         entry_atr = safe_float(
             atr_series.iloc[last_entry_index]
         )
 
-        stop_price = (
-            entry_price
-            - ATR_MULTIPLIER * entry_atr
+        bars_since_entry = (
+            len(close)
+            - 1
+            - last_entry_index
         )
 
-        tp1_price = (
+    # --------------------------------------------------------
+    # TP / SL
+    # --------------------------------------------------------
+
+    tp1 = None
+    tp2 = None
+    stop = None
+
+    if entry_price is not None:
+
+        tp1 = (
             entry_price
             * (1 + TP1_PERCENT / 100)
         )
 
-        tp2_price = (
+        tp2 = (
             entry_price
             * (1 + TP2_PERCENT / 100)
         )
 
-        entry_date = str(
-            data.index[last_entry_index].date()
+        stop = (
+            entry_price
+            - STOP_MULTIPLIER
+            * entry_atr
         )
 
-        # Sonraki günlerde çıkış olmuş mu?
-        position_active = True
+    # --------------------------------------------------------
+    # POZİSYON DURUMU
+    # --------------------------------------------------------
 
-        for i in range(
-            last_entry_index + 1,
-            len(data)
+    position_status = "BEKLE"
+
+    if buy_now:
+
+        position_status = "AL"
+
+    elif entry_price is not None:
+
+        if price >= tp2:
+
+            position_status = "TP2"
+
+        elif price >= tp1:
+
+            position_status = "TP1"
+
+        elif (
+            stop is not None
+            and price <= stop
         ):
 
-            day_low = safe_float(
-                low.iloc[i]
-            )
+            position_status = "STOP"
 
-            day_high = safe_float(
-                high.iloc[i]
-            )
+        elif bars_since_entry is not None:
 
-            day_close = safe_float(
-                close.iloc[i]
-            )
+            position_status = "POZİSYON"
 
-            # Önce stop kontrolü
-            if day_close < (
-                entry_price
-                - ATR_MULTIPLIER
-                * safe_float(atr_series.iloc[i])
-            ):
-
-                position_active = False
-                break
-
-            # TP2'ye ulaşmışsa strateji hâlâ
-            # pozisyonun kalan kısmını taşıyabilir.
-            #
-            # Burada yalnızca aktiflik takibi yapıyoruz.
-            if day_high >= tp2_price:
-
-                # Pozisyonun %15'i TP2
-                # seviyesinde satılır.
-                #
-                # Kalan pozisyon devam eder.
-                pass
-
-            if day_high >= tp1_price:
-
-                # Pozisyonun %10'u TP1
-                # seviyesinde satılır.
-                pass
-
-    # -----------------------------------------------------
-    # SİNYAL DURUMU
-    # -----------------------------------------------------
-
-    if buy_signal:
-
-        status = "AL"
-
-    elif position_active:
-
-        status = "POZİSYON"
-
-    else:
-
-        status = "BEKLE"
-
-    # -----------------------------------------------------
+    # --------------------------------------------------------
     # TREND
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
     if current_sma34 < current_ema34:
 
         trend = "YUKARI"
 
+    elif current_sma34 > current_ema34:
+
+        trend = "AŞAĞI"
+
     else:
 
-        trend = "ZAYIF"
+        trend = "NÖTR"
 
-    # -----------------------------------------------------
+    # --------------------------------------------------------
     # MACD
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
     if current_macd > current_signal:
 
-        macd_status = "POZİTİF"
+        macd_state = "POZİTİF"
+
+    elif current_macd < current_signal:
+
+        macd_state = "NEGATİF"
 
     else:
 
-        macd_status = "NEGATİF"
+        macd_state = "NÖTR"
 
-    # -----------------------------------------------------
-    # ATR STOP MESAFESİ
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # ATR YÜZDESİ
+    # --------------------------------------------------------
 
-    stop_distance_percent = 0
+    atr_percent = (
+        current_atr / price * 100
+        if price
+        else 0
+    )
 
-    if price > 0:
+    # --------------------------------------------------------
+    # SON 52 HAFTA
+    # --------------------------------------------------------
 
-        stop_distance_percent = (
-            (price - (
-                price
-                - ATR_MULTIPLIER
-                * current_atr
-            ))
-            / price
-        ) * 100
+    high_52 = safe_float(
+        close.tail(252).max(),
+        price
+    )
 
-    # -----------------------------------------------------
-    # 21 / 63 / 126 GÜNLÜK GETİRİ
-    # -----------------------------------------------------
+    low_52 = safe_float(
+        close.tail(252).min(),
+        price
+    )
 
-    def return_percent(period):
+    distance_high = (
+        (price / high_52 - 1)
+        * 100
+        if high_52
+        else 0
+    )
+
+    distance_low = (
+        (price / low_52 - 1)
+        * 100
+        if low_52
+        else 0
+    )
+
+    # --------------------------------------------------------
+    # GETİRİLER
+    # --------------------------------------------------------
+
+    def return_pct(period):
 
         if len(close) <= period:
+
             return 0
 
         old = safe_float(
@@ -641,77 +713,307 @@ def calculate_matr(symbol, name, data):
         )
 
         if old == 0:
+
             return 0
 
         return (
             price / old - 1
         ) * 100
 
-    ret21 = return_percent(21)
+    ret21 = return_pct(21)
+    ret63 = return_pct(63)
+    ret126 = return_pct(126)
 
-    ret63 = return_percent(63)
+    # --------------------------------------------------------
+    # HACİM
+    # --------------------------------------------------------
 
-    ret126 = return_percent(126)
+    avg_volume20 = (
+        volume
+        .rolling(20)
+        .mean()
+        .iloc[-1]
+    )
 
-    # -----------------------------------------------------
-    # BASİT MATR PUANI
-    #
-    # Bu puan eski sistemin puanı değildir.
-    # Sadece MATR koşullarının durumunu özetler.
-    # -----------------------------------------------------
-
-    matr_score = 0
-
-    if trend_condition.iloc[-1]:
-        matr_score += 40
-
-    if current_macd > current_signal:
-        matr_score += 30
-
-    if current_histogram > 0:
-        matr_score += 15
-
-    if buy_signal:
-        matr_score += 15
-
-    matr_score = min(
-        100,
-        max(
-            0,
-            matr_score
+    volume_ratio = (
+        current_volume
+        / safe_float(
+            avg_volume20,
+            1
         )
     )
 
-    # -----------------------------------------------------
-    # SONUÇ
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # RSI
+    # --------------------------------------------------------
 
-    return {
+    delta = close.diff()
 
-        "code": symbol,
+    gain = delta.clip(
+        lower=0
+    )
 
-        "name": name,
+    loss = -delta.clip(
+        upper=0
+    )
+
+    avg_gain = gain.ewm(
+        alpha=1 / 14,
+        adjust=False
+    ).mean()
+
+    avg_loss = loss.ewm(
+        alpha=1 / 14,
+        adjust=False
+    ).mean()
+
+    rs = (
+        avg_gain
+        /
+        avg_loss.replace(
+            0,
+            np.nan
+        )
+    )
+
+    rsi = (
+        100
+        - 100 / (1 + rs)
+    )
+
+    rsi_value = safe_float(
+        rsi.iloc[-1],
+        50
+    )
+
+    # --------------------------------------------------------
+    # ADX
+    # --------------------------------------------------------
+
+    up_move = high.diff()
+
+    down_move = -low.diff()
+
+    plus_dm = np.where(
+        (
+            (up_move > down_move)
+            &
+            (up_move > 0)
+        ),
+        up_move,
+        0
+    )
+
+    minus_dm = np.where(
+        (
+            (down_move > up_move)
+            &
+            (down_move > 0)
+        ),
+        down_move,
+        0
+    )
+
+    previous_close = close.shift(1)
+
+    tr = pd.concat(
+        [
+            high - low,
+            (high - previous_close).abs(),
+            (low - previous_close).abs()
+        ],
+        axis=1
+    ).max(axis=1)
+
+    atr14 = tr.ewm(
+        alpha=1 / 14,
+        adjust=False
+    ).mean()
+
+    plus_di = (
+        100
+        *
+        pd.Series(
+            plus_dm,
+            index=close.index
+        ).ewm(
+            alpha=1 / 14,
+            adjust=False
+        ).mean()
+        /
+        atr14.replace(
+            0,
+            np.nan
+        )
+    )
+
+    minus_di = (
+        100
+        *
+        pd.Series(
+            minus_dm,
+            index=close.index
+        ).ewm(
+            alpha=1 / 14,
+            adjust=False
+        ).mean()
+        /
+        atr14.replace(
+            0,
+            np.nan
+        )
+    )
+
+    dx = (
+        100
+        *
+        (plus_di - minus_di).abs()
+        /
+        (
+            plus_di + minus_di
+        ).replace(
+            0,
+            np.nan
+        )
+    )
+
+    adx_series = dx.ewm(
+        alpha=1 / 14,
+        adjust=False
+    ).mean()
+
+    adx_value = safe_float(
+        adx_series.iloc[-1],
+        20
+    )
+
+    # --------------------------------------------------------
+    # MA T-R PUANI
+    #
+    # Bu puan sadece MaT-R sinyalinin
+    # durumunu kullanıcıya kolay göstermek için.
+    # Ana AL/SAT mantığını değiştirmez.
+    # --------------------------------------------------------
+
+    matr_score = 50
+
+    if trend == "YUKARI":
+        matr_score += 20
+    else:
+        matr_score -= 20
+
+    if macd_state == "POZİTİF":
+        matr_score += 20
+    else:
+        matr_score -= 20
+
+    if current_hist > 0:
+        matr_score += 10
+    else:
+        matr_score -= 10
+
+    if adx_value >= 25:
+        matr_score += 10
+
+    if rsi_value >= 50:
+        matr_score += 5
+
+    if rsi_value > 75:
+        matr_score -= 5
+
+    matr_score = int(
+        max(
+            0,
+            min(
+                100,
+                matr_score
+            )
+        )
+    )
+
+    # --------------------------------------------------------
+    # GÖSTERİM SİNYALİ
+    # --------------------------------------------------------
+
+    if buy_now:
+
+        signal_name = "AL"
+
+    elif position_status == "STOP":
+
+        signal_name = "STOP"
+
+    elif position_status == "TP2":
+
+        signal_name = "KAR AL 2"
+
+    elif position_status == "TP1":
+
+        signal_name = "KAR AL 1"
+
+    elif trend == "YUKARI" and macd_state == "POZİTİF":
+
+        signal_name = "POZİTİF"
+
+    elif trend == "YUKARI":
+
+        signal_name = "İZLE"
+
+    else:
+
+        signal_name = "BEKLE"
+
+    # --------------------------------------------------------
+    # SİNYALLER
+    # --------------------------------------------------------
+
+    signals = []
+
+    if buy_now:
+        signals.append("MA T-R AL")
+
+    if trend == "YUKARI":
+        signals.append("EMA34>SMA34")
+
+    if macd_state == "POZİTİF":
+        signals.append("MACD")
+
+    if adx_value >= 25:
+        signals.append("ADX")
+
+    if volume_ratio >= 1.5:
+        signals.append("HACİM")
+
+    if rsi_value >= 50:
+        signals.append("RSI")
+
+    # --------------------------------------------------------
+    # JSON SONUCU
+    # --------------------------------------------------------
+
+    result = {
+
+        "code": None,
+        "name": None,
+
+        "date": str(last)[:10],
 
         "price": round(
             price,
-            2
+            4
         ),
 
-        "status": status,
+        "signal": signal_name,
 
-        "signal": (
-            "AL"
-            if buy_signal
-            else "BEKLE"
-        ),
+        "matrSignal": "AL" if buy_now else "YOK",
+
+        "matrScore": matr_score,
+
+        "positionStatus": position_status,
 
         "trend": trend,
 
-        "macdStatus": macd_status,
-
-        "matrScore": int(
-            matr_score
-        ),
+        "macdState": macd_state,
 
         "ema34": round(
             current_ema34,
@@ -720,6 +1022,16 @@ def calculate_matr(symbol, name, data):
 
         "sma34": round(
             current_sma34,
+            4
+        ),
+
+        "fastMA": round(
+            current_fast,
+            4
+        ),
+
+        "slowMA": round(
+            current_slow,
             4
         ),
 
@@ -734,7 +1046,7 @@ def calculate_matr(symbol, name, data):
         ),
 
         "histogram": round(
-            current_histogram,
+            current_hist,
             6
         ),
 
@@ -743,38 +1055,28 @@ def calculate_matr(symbol, name, data):
             4
         ),
 
-        "entryPrice": (
-            round(entry_price, 2)
-            if entry_price is not None
-            else None
+        "atrPercent": round(
+            atr_percent,
+            2
         ),
 
-        "stopPrice": (
-            round(stop_price, 2)
-            if stop_price is not None
-            else None
+        "rsi": round(
+            rsi_value,
+            2
         ),
 
-        "tp1Price": (
-            round(tp1_price, 2)
-            if tp1_price is not None
-            else None
+        "adx": round(
+            adx_value,
+            2
         ),
 
-        "tp2Price": (
-            round(tp2_price, 2)
-            if tp2_price is not None
-            else None
+        "volume": round(
+            current_volume,
+            0
         ),
 
-        "entryDate": entry_date,
-
-        "positionActive": bool(
-            position_active
-        ),
-
-        "stopDistancePercent": round(
-            stop_distance_percent,
+        "volumeRatio": round(
+            volume_ratio,
             2
         ),
 
@@ -793,215 +1095,552 @@ def calculate_matr(symbol, name, data):
             2
         ),
 
-        "parameters": {
+        "high52": round(
+            high_52,
+            4
+        ),
 
-            "trendPeriod": TREND_PERIOD,
+        "low52": round(
+            low_52,
+            4
+        ),
 
-            "macdFast": MACD_FAST,
+        "distance52High": round(
+            distance_high,
+            2
+        ),
 
-            "macdSlow": MACD_SLOW,
+        "distance52Low": round(
+            distance_low,
+            2
+        ),
 
-            "macdSignal": MACD_SIGNAL,
+        "entryPrice": (
+            round(
+                entry_price,
+                4
+            )
+            if entry_price is not None
+            else None
+        ),
 
-            "atrPeriod": ATR_PERIOD,
+        "entryDate": entry_date,
 
-            "atrMultiplier": ATR_MULTIPLIER,
+        "entryATR": (
+            round(
+                entry_atr,
+                4
+            )
+            if entry_atr is not None
+            else None
+        ),
 
-            "tp1Percent": TP1_PERCENT,
+        "barsSinceEntry": bars_since_entry,
 
-            "tp2Percent": TP2_PERCENT
+        "tp1": (
+            round(
+                tp1,
+                4
+            )
+            if tp1 is not None
+            else None
+        ),
 
-        }
+        "tp2": (
+            round(
+                tp2,
+                4
+            )
+            if tp2 is not None
+            else None
+        ),
 
+        "stop": (
+            round(
+                stop,
+                4
+            )
+            if stop is not None
+            else None
+        ),
+
+        "tp1Percent": TP1_PERCENT,
+
+        "tp2Percent": TP2_PERCENT,
+
+        "stopMultiplier": STOP_MULTIPLIER,
+
+        "atrPeriod": ATR_PERIOD,
+
+        "signals": signals
     }
 
+    return result
 
-# =========================================================
+
+# ============================================================
+# DATAFRAME DÜZELT
+# ============================================================
+
+def extract_ticker_data(raw, symbol):
+
+    if raw is None or raw.empty:
+        return None
+
+    ticker = symbol + ".IS"
+
+    try:
+
+        if isinstance(
+            raw.columns,
+            pd.MultiIndex
+        ):
+
+            level0 = (
+                raw.columns
+                .get_level_values(0)
+            )
+
+            level1 = (
+                raw.columns
+                .get_level_values(1)
+            )
+
+            if ticker in level0:
+
+                return raw[
+                    ticker
+                ].copy()
+
+            if ticker in level1:
+
+                return raw.xs(
+                    ticker,
+                    axis=1,
+                    level=1
+                ).copy()
+
+        else:
+
+            return raw.copy()
+
+    except Exception as exc:
+
+        print(
+            f"{symbol} veri ayıklama hatası:",
+            exc
+        )
+
+    return None
+
+
+# ============================================================
+# TEK HİSSE
+# ============================================================
+
+def process_stock(symbol, name, data):
+
+    try:
+
+        result = calculate_strategy(
+            data
+        )
+
+        if result is None:
+            return None
+
+        result["code"] = symbol
+        result["name"] = (
+            str(name)
+            if name is not None
+            else ""
+        )
+
+        return result
+
+    except Exception as exc:
+
+        print(
+            f"SKIP {symbol}: {exc}"
+        )
+
+        return None
+
+
+# ============================================================
+# JSON TEMİZLE
+# ============================================================
+
+def clean_json_value(value):
+
+    if isinstance(
+        value,
+        dict
+    ):
+
+        return {
+            key: clean_json_value(val)
+            for key, val in value.items()
+        }
+
+    if isinstance(
+        value,
+        list
+    ):
+
+        return [
+            clean_json_value(x)
+            for x in value
+        ]
+
+    if isinstance(
+        value,
+        float
+    ):
+
+        if math.isfinite(value):
+            return value
+
+        return None
+
+    if isinstance(
+        value,
+        np.floating
+    ):
+
+        value = float(value)
+
+        if math.isfinite(value):
+            return value
+
+        return None
+
+    if isinstance(
+        value,
+        np.integer
+    ):
+
+        return int(value)
+
+    return value
+
+
+# ============================================================
 # ANA PROGRAM
-# =========================================================
+# ============================================================
 
 def main():
 
-    start_time = time.time()
-
     print()
     print("=" * 60)
-    print("MATR BIST RADAR")
+    print("BIST MaT-R TARAYICI")
     print("=" * 60)
     print()
 
     symbols = get_symbols()
 
-    symbol_list = list(symbols.keys())
+    symbol_list = list(
+        symbols.keys()
+    )
 
     results = []
 
     failed = []
 
-    total = len(symbol_list)
+    total = len(
+        symbol_list
+    )
 
-    for index, symbol in enumerate(
-        symbol_list,
-        start=1
+    # --------------------------------------------------------
+    # BATCH
+    # --------------------------------------------------------
+
+    for start in range(
+        0,
+        total,
+        BATCH_SIZE
     ):
 
-        print(
-            f"[{index}/{total}] {symbol}",
-            end=" "
+        batch = symbol_list[
+            start:
+            start + BATCH_SIZE
+        ]
+
+        end = min(
+            start + BATCH_SIZE,
+            total
         )
+
+        print()
+        print(
+            f"[{start + 1}-{end}/{total}] "
+            f"veri indiriliyor..."
+        )
+
+        tickers = [
+            symbol + ".IS"
+            for symbol in batch
+        ]
 
         try:
 
-            data = get_stock_data(
-                symbol
+            raw = yf.download(
+                tickers,
+                period=DOWNLOAD_PERIOD,
+                interval=DOWNLOAD_INTERVAL,
+                auto_adjust=True,
+                group_by="ticker",
+                threads=True,
+                progress=False,
+                timeout=60
             )
 
-            if data is None:
-
-                print("VERİ YOK")
-
-                failed.append(symbol)
-
-                continue
-
-            result = calculate_matr(
-                symbol,
-                symbols[symbol],
-                data
-            )
-
-            if result is None:
-
-                print("HESAPLANAMADI")
-
-                failed.append(symbol)
-
-                continue
-
-            results.append(result)
+        except Exception as exc:
 
             print(
-                f"{result['status']} "
-                f"Skor:{result['matrScore']}"
+                "BATCH ERROR:",
+                exc
             )
 
-        except Exception as error:
+            for symbol in batch:
+                failed.append(symbol)
 
-            print(
-                f"HATA: {error}"
-            )
+            continue
 
-            failed.append(symbol)
+        # ----------------------------------------------------
+        # HİSSELER
+        # ----------------------------------------------------
 
-    # -----------------------------------------------------
+        for symbol in batch:
+
+            try:
+
+                data = extract_ticker_data(
+                    raw,
+                    symbol
+                )
+
+                if data is None:
+
+                    failed.append(
+                        symbol
+                    )
+
+                    continue
+
+                result = process_stock(
+                    symbol,
+                    symbols[symbol],
+                    data
+                )
+
+                if result is None:
+
+                    failed.append(
+                        symbol
+                    )
+
+                else:
+
+                    results.append(
+                        result
+                    )
+
+            except Exception as exc:
+
+                print(
+                    "HATA",
+                    symbol,
+                    exc
+                )
+
+                failed.append(
+                    symbol
+                )
+
+        time.sleep(1)
+
+    # --------------------------------------------------------
     # SIRALAMA
-    # -----------------------------------------------------
+    #
+    # Önce gerçek AL sinyalleri,
+    # sonra MaT-R puanı.
+    # --------------------------------------------------------
 
     results.sort(
         key=lambda x: (
-            x["signal"] == "AL",
+            x["matrSignal"] == "AL",
             x["matrScore"]
         ),
         reverse=True
     )
 
-    # -----------------------------------------------------
+    # --------------------------------------------------------
     # JSON
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
-    output = Path(
-        OUTPUT_FILE
+    cleaned = clean_json_value(
+        results
     )
 
-    with output.open(
+    with OUTPUT_FILE.open(
         "w",
         encoding="utf-8"
     ) as file:
 
         json.dump(
-            results,
+            cleaned,
             file,
             ensure_ascii=False,
             allow_nan=False,
-            indent=2
+            separators=(
+                ",",
+                ":"
+            )
         )
 
-    # -----------------------------------------------------
+    # --------------------------------------------------------
     # ÖZET
-    # -----------------------------------------------------
+    # --------------------------------------------------------
 
-    buy_count = sum(
-        x["signal"] == "AL"
+    buy_list = [
+        x
         for x in results
-    )
+        if x["matrSignal"] == "AL"
+    ]
 
-    active_count = sum(
-        x["positionActive"]
+    tp1_list = [
+        x
         for x in results
-    )
+        if x["positionStatus"] == "TP1"
+    ]
+
+    tp2_list = [
+        x
+        for x in results
+        if x["positionStatus"] == "TP2"
+    ]
+
+    stop_list = [
+        x
+        for x in results
+        if x["positionStatus"] == "STOP"
+    ]
 
     print()
     print("=" * 60)
-    print("MATR TAMAMLANDI")
+    print("TARAMA TAMAMLANDI")
     print("=" * 60)
 
     print(
-        f"Toplam sembol : {total}"
+        "Başarılı hisse:",
+        len(results)
     )
 
     print(
-        f"Başarılı      : {len(results)}"
+        "Veri alınamayan:",
+        len(failed)
     )
 
     print(
-        f"Veri/Hata     : {len(failed)}"
+        "MaT-R AL:",
+        len(buy_list)
     )
 
     print(
-        f"AL sinyali    : {buy_count}"
+        "TP1:",
+        len(tp1_list)
     )
 
     print(
-        f"Aktif pozisyon: {active_count}"
+        "TP2:",
+        len(tp2_list)
     )
 
     print(
-        f"Dosya         : {OUTPUT_FILE}"
+        "STOP:",
+        len(stop_list)
     )
 
     print(
-        f"Süre          : "
-        f"{time.time() - start_time:.1f} sn"
+        "JSON:",
+        OUTPUT_FILE
     )
 
-    print("=" * 60)
+    # --------------------------------------------------------
+    # AL SİNYALLERİ
+    # --------------------------------------------------------
 
     print()
-    print("MATR AL SİNYALLERİ")
-    print("-" * 60)
+    print("=" * 60)
+    print("MaT-R AL SİNYALLERİ")
+    print("=" * 60)
 
-    for item in results:
+    if not buy_list:
 
-        if item["signal"] == "AL":
+        print(
+            "Bugün yeni MaT-R AL sinyali yok."
+        )
+
+    else:
+
+        for i, stock in enumerate(
+            buy_list,
+            1
+        ):
 
             print(
-                item["code"],
-                "|",
-                item["price"],
-                "|",
-                "Giriş:",
-                item["entryPrice"],
-                "|",
-                "SL:",
-                item["stopPrice"],
-                "|",
-                "TP1:",
-                item["tp1Price"],
-                "|",
-                "TP2:",
-                item["tp2Price"]
+                f"{i:>3}. "
+                f"{stock['code']:<8} "
+                f"Fiyat={stock['price']:<10} "
+                f"Skor={stock['matrScore']:<3} "
+                f"ATR={stock['atr']}"
             )
 
+    # --------------------------------------------------------
+    # EN GÜÇLÜ 20
+    # --------------------------------------------------------
+
+    print()
+    print("=" * 60)
+    print("EN GÜÇLÜ 20 MaT-R")
+    print("=" * 60)
+
+    top20 = sorted(
+        results,
+        key=lambda x: x["matrScore"],
+        reverse=True
+    )[:20]
+
+    for i, stock in enumerate(
+        top20,
+        1
+    ):
+
+        print(
+            f"{i:>3}. "
+            f"{stock['code']:<8} "
+            f"{stock['matrScore']:>3} "
+            f"{stock['signal']}"
+        )
+
+    # --------------------------------------------------------
+    # 400 HİSSE KONTROLÜ
+    # --------------------------------------------------------
+
+    if len(results) < 400:
+
+        raise RuntimeError(
+            "Çok az hisse üretildi: "
+            f"{len(results)}. "
+            "Yahoo Finance veri kaynağını veya "
+            "sembol listesini kontrol et."
+        )
+
+
+# ============================================================
+# ÇALIŞTIR
+# ============================================================
 
 if __name__ == "__main__":
     main()
