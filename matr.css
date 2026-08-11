@@ -1,8 +1,39 @@
 /* =========================================================
-   BIST MATR
-   matr.css
-   Sıfırdan tasarım
-   ========================================================= */
+   MATR BIST RADAR
+   Ana stil dosyası
+========================================================= */
+
+:root {
+    --bg: #07111f;
+    --bg-soft: #0b1728;
+    --panel: #0f1d30;
+    --panel-2: #132238;
+    --border: #24364d;
+
+    --text: #e8eef7;
+    --muted: #8fa1b7;
+
+    --blue: #38bdf8;
+    --blue-soft: rgba(56, 189, 248, .12);
+
+    --green: #22c55e;
+    --green-soft: rgba(34, 197, 94, .13);
+
+    --yellow: #eab308;
+    --yellow-soft: rgba(234, 179, 8, .13);
+
+    --red: #ef4444;
+    --red-soft: rgba(239, 68, 68, .13);
+
+    --orange: #f97316;
+
+    --radius: 12px;
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
 
 * {
     box-sizing: border-box;
@@ -14,556 +45,1147 @@ html {
 
 body {
     margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #07111f;
-    color: #e5e7eb;
+    padding: 0;
+
+    font-family:
+        Inter,
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background:
+        radial-gradient(
+            circle at top,
+            #10233c 0,
+            var(--bg) 45%,
+            #050c16 100%
+        );
+
+    color: var(--text);
+
+    min-height: 100vh;
 }
+
 
 /* =========================================================
-   ANA KONTEYNER
-   ========================================================= */
+   GENEL
+========================================================= */
 
 .container {
-    width: min(1400px, 100%);
+    width: min(1400px, calc(100% - 30px));
     margin: 0 auto;
-    padding: 20px;
 }
+
 
 /* =========================================================
    HEADER
-   ========================================================= */
+========================================================= */
 
-.header {
-    background: #0b1628;
-    border-bottom: 1px solid #1e3a5f;
+.topbar {
     position: sticky;
     top: 0;
+
     z-index: 100;
+
+    background:
+        rgba(7, 17, 31, .92);
+
+    backdrop-filter: blur(14px);
+
+    border-bottom:
+        1px solid var(--border);
 }
 
-.header-inner {
-    width: min(1400px, 100%);
-    margin: 0 auto;
-    padding: 16px 20px;
+
+.topbar .container {
+    min-height: 76px;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
+
     gap: 20px;
 }
 
-.logo {
+
+.brand {
     display: flex;
     align-items: center;
+
     gap: 12px;
 }
 
-.logo-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
+
+.brand-icon {
+    width: 44px;
+    height: 44px;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0f2742;
-    border: 1px solid #2563eb;
-    font-size: 22px;
+
+    border-radius: 11px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #38bdf8,
+            #2563eb
+        );
+
+    color: white;
+
+    font-size: 21px;
+    font-weight: 900;
+
+    box-shadow:
+        0 8px 25px rgba(37, 99, 235, .28);
 }
 
-.logo-title {
+
+.brand h1 {
     margin: 0;
-    font-size: 22px;
-    font-weight: 800;
-    color: #f8fafc;
+
+    font-size: 21px;
+    line-height: 1.2;
 }
 
-.logo-subtitle {
-    margin-top: 3px;
-    color: #64748b;
+
+.brand p {
+    margin: 4px 0 0;
+
+    color: var(--muted);
+
     font-size: 12px;
 }
 
-/* =========================================================
-   DURUM
-   ========================================================= */
 
-.status {
-    padding: 12px 15px;
-    margin-bottom: 18px;
-    border-radius: 10px;
-    background: #0b1628;
-    border: 1px solid #1e3a5f;
-    color: #94a3b8;
-    font-size: 13px;
+.update {
+    color: var(--muted);
+
+    font-size: 12px;
+
+    text-align: right;
 }
 
-.status.success {
-    border-color: #166534;
-    color: #86efac;
-}
-
-.status.error {
-    border-color: #991b1b;
-    background: #2a0c0c;
-    color: #fca5a5;
-}
 
 /* =========================================================
-   MATR ÖZET
-   ========================================================= */
+   MAIN
+========================================================= */
 
-.matr-summary {
+main.container {
+    padding-top: 22px;
+    padding-bottom: 50px;
+}
+
+
+/* =========================================================
+   ÖZET KARTLARI
+========================================================= */
+
+.summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
     gap: 12px;
-    margin-bottom: 18px;
+
+    margin-bottom: 16px;
 }
 
-.matr-card {
-    background: #0b1628;
-    border: 1px solid #1e3a5f;
-    border-radius: 12px;
-    padding: 16px;
+
+.summary-card {
+    position: relative;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(19, 34, 56, .98),
+            rgba(12, 26, 44, .98)
+        );
+
+    border:
+        1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    padding: 17px;
+
+    box-shadow:
+        0 10px 35px rgba(0, 0, 0, .15);
 }
 
-.matr-card-title {
-    color: #64748b;
+
+.summary-card::after {
+    content: "";
+
+    position: absolute;
+
+    width: 80px;
+    height: 80px;
+
+    right: -30px;
+    bottom: -30px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(56, 189, 248, .06);
+}
+
+
+.summary-card span {
+    display: block;
+
+    color: var(--muted);
+
     font-size: 12px;
+
     margin-bottom: 7px;
 }
 
-.matr-card-value {
-    font-size: 24px;
-    font-weight: 800;
-    color: #f8fafc;
+
+.summary-card strong {
+    display: block;
+
+    font-size: 27px;
+
+    line-height: 1;
 }
 
+
+.buy-card strong {
+    color: var(--green);
+}
+
+
 /* =========================================================
-   KONTROLLER
-   ========================================================= */
+   CONTROLLER
+========================================================= */
 
 .controls {
     display: grid;
-    grid-template-columns: minmax(200px, 1fr) 180px 180px;
+
+    grid-template-columns:
+        minmax(250px, 1fr)
+        190px
+        190px;
+
     gap: 10px;
-    margin-bottom: 18px;
+
+    margin-bottom: 14px;
 }
+
+
+.search-box {
+    position: relative;
+}
+
+
+.search-box::before {
+    content: "⌕";
+
+    position: absolute;
+
+    left: 13px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    color: var(--muted);
+
+    font-size: 19px;
+
+    pointer-events: none;
+}
+
 
 input,
 select {
     width: 100%;
-    height: 44px;
-    padding: 0 13px;
+
+    min-height: 44px;
+
+    border:
+        1px solid var(--border);
+
     border-radius: 9px;
-    border: 1px solid #334155;
-    background: #0b1628;
-    color: #e5e7eb;
+
     outline: none;
+
+    background:
+        var(--panel);
+
+    color: var(--text);
+
+    padding: 0 13px;
+
     font-size: 13px;
+
+    transition:
+        border-color .2s,
+        box-shadow .2s;
 }
+
+
+.search-box input {
+    padding-left: 39px;
+}
+
+
+input::placeholder {
+    color: #71839a;
+}
+
 
 input:focus,
 select:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    border-color: var(--blue);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(56, 189, 248, .10);
 }
+
+
+select {
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   STRATEJİ BİLGİSİ
+========================================================= */
+
+.strategy-info {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin-bottom: 16px;
+
+    padding: 11px 13px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 10px;
+
+    background:
+        rgba(15, 29, 48, .75);
+
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+.strategy-info > div {
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    padding-right: 13px;
+
+    margin-right: 5px;
+
+    border-right:
+        1px solid var(--border);
+}
+
+
+.strategy-info > div:last-child {
+    border-right: 0;
+}
+
+
+.strategy-info strong {
+    color: var(--text);
+}
+
 
 /* =========================================================
    TABLO
-   ========================================================= */
+========================================================= */
 
-.table-wrap {
-    width: 100%;
-    overflow-x: auto;
-    border-radius: 12px;
-    border: 1px solid #1e3a5f;
-    background: #0b1628;
+.table-section {
+    overflow: hidden;
+
+    background:
+        rgba(15, 29, 48, .96);
+
+    border:
+        1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    box-shadow:
+        0 15px 45px rgba(0, 0, 0, .20);
 }
+
+
+.table-header {
+    min-height: 66px;
+
+    padding: 14px 17px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    border-bottom:
+        1px solid var(--border);
+}
+
+
+.table-header h2 {
+    margin: 0 0 4px;
+
+    font-size: 16px;
+}
+
+
+.table-header span {
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+.table-wrapper {
+    width: 100%;
+
+    overflow-x: auto;
+}
+
 
 table {
     width: 100%;
-    min-width: 1100px;
+
+    min-width: 1050px;
+
     border-collapse: collapse;
 }
 
+
 thead {
-    background: #0f2035;
+    background:
+        #122137;
 }
+
 
 th {
-    padding: 13px 10px;
-    text-align: left;
-    color: #64748b;
+    position: sticky;
+
+    top: 76px;
+
+    z-index: 10;
+
+    padding: 12px 10px;
+
+    color: #91a5bd;
+
     font-size: 11px;
+
     font-weight: 700;
+
+    text-align: left;
+
     white-space: nowrap;
-    border-bottom: 1px solid #1e3a5f;
+
+    border-bottom:
+        1px solid var(--border);
 }
+
 
 td {
-    padding: 13px 10px;
+    padding: 12px 10px;
+
     font-size: 13px;
-    border-bottom: 1px solid #14263d;
+
+    border-bottom:
+        1px solid rgba(36, 54, 77, .65);
+
     white-space: nowrap;
 }
 
-tbody tr {
-    transition: background 0.15s ease;
-}
 
-tbody tr:hover {
-    background: #0f2035;
+tbody tr {
+    transition:
+        background .15s,
+        transform .15s;
+
     cursor: pointer;
 }
+
+
+tbody tr:hover {
+    background:
+        rgba(56, 189, 248, .055);
+}
+
+
+tbody tr:last-child td {
+    border-bottom: 0;
+}
+
 
 /* =========================================================
    HİSSE
-   ========================================================= */
+========================================================= */
 
 .stock-code {
-    font-size: 14px;
+    color: var(--blue);
+
     font-weight: 800;
-    color: #60a5fa;
 }
+
 
 .stock-name {
-    margin-top: 3px;
-    max-width: 220px;
+    display: block;
+
+    max-width: 210px;
+
     overflow: hidden;
+
     text-overflow: ellipsis;
-    color: #64748b;
+
+    color: var(--muted);
+
     font-size: 11px;
+
+    margin-top: 3px;
 }
 
+
 /* =========================================================
-   MATR PUANI
-   ========================================================= */
+   MATR SKOR
+========================================================= */
 
 .matr-score {
     display: inline-flex;
+
     align-items: center;
     justify-content: center;
-    min-width: 52px;
-    padding: 6px 9px;
+
+    min-width: 42px;
+
+    padding: 5px 8px;
+
     border-radius: 7px;
-    font-size: 15px;
-    font-weight: 800;
-}
 
-/* Güçlü */
+    font-size: 14px;
 
-.matr-score.very-strong {
-    background: #14532d;
-    color: #86efac;
-}
-
-/* Pozitif */
-
-.matr-score.strong {
-    background: #064e3b;
-    color: #6ee7b7;
-}
-
-/* Orta */
-
-.matr-score.positive {
-    background: #164e63;
-    color: #67e8f9;
-}
-
-/* Nötr */
-
-.matr-score.neutral {
-    background: #713f12;
-    color: #fde68a;
-}
-
-/* Zayıf */
-
-.matr-score.weak {
-    background: #7f1d1d;
-    color: #fca5a5;
-}
-
-/* =========================================================
-   MATR SİNYAL
-   ========================================================= */
-
-.matr-signal {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 9px;
-    border-radius: 7px;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-}
-
-.matr-signal.buy {
-    background: #14532d;
-    color: #86efac;
-}
-
-.matr-signal.watch {
-    background: #713f12;
-    color: #fde68a;
-}
-
-.matr-signal.sell {
-    background: #7f1d1d;
-    color: #fca5a5;
-}
-
-.matr-signal.neutral {
-    background: #334155;
-    color: #cbd5e1;
-}
-
-/* =========================================================
-   MATR GÖSTERGELERİ
-   ========================================================= */
-
-.matr-positive {
-    color: #4ade80;
-    font-weight: 700;
-}
-
-.matr-negative {
-    color: #f87171;
-    font-weight: 700;
-}
-
-.matr-neutral {
-    color: #fbbf24;
-    font-weight: 700;
-}
-
-/* =========================================================
-   DETAY MODAL
-   ========================================================= */
-
-.modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 500;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.78);
-    overflow-y: auto;
-}
-
-.modal.active {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-}
-
-.modal-box {
-    width: min(760px, 100%);
-    margin-top: 40px;
-    padding: 22px;
-    border-radius: 14px;
-    background: #0b1628;
-    border: 1px solid #334155;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 15px;
-    margin-bottom: 18px;
-}
-
-.modal-title {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 800;
-}
-
-.modal-subtitle {
-    margin-top: 4px;
-    color: #64748b;
-    font-size: 12px;
-}
-
-.modal-close {
-    width: 36px;
-    height: 36px;
-    border: 0;
-    border-radius: 8px;
-    background: #1e293b;
-    color: #e5e7eb;
-    font-size: 20px;
-    cursor: pointer;
-}
-
-.modal-close:hover {
-    background: #334155;
-}
-
-/* =========================================================
-   DETAY SKOR
-   ========================================================= */
-
-.detail-score {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 15px;
-    padding: 18px;
-    margin-bottom: 15px;
-    border-radius: 11px;
-    background: #07111f;
-    border: 1px solid #1e3a5f;
-}
-
-.detail-score-label {
-    color: #64748b;
-    font-size: 12px;
-}
-
-.detail-score-value {
-    margin-top: 4px;
-    font-size: 34px;
     font-weight: 900;
 }
 
+
+.score-high {
+    background: var(--green-soft);
+    color: #4ade80;
+}
+
+
+.score-positive {
+    background:
+        rgba(34, 197, 94, .08);
+
+    color: #86efac;
+}
+
+
+.score-neutral {
+    background: var(--yellow-soft);
+    color: #fde047;
+}
+
+
+.score-low {
+    background: var(--red-soft);
+    color: #fca5a5;
+}
+
+
 /* =========================================================
-   DETAY GRID
-   ========================================================= */
+   SİNYALLER
+========================================================= */
 
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+.signal-badge {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-width: 72px;
+
+    padding: 5px 8px;
+
+    border-radius: 7px;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    letter-spacing: .3px;
 }
 
-.detail-item {
-    padding: 13px;
-    border-radius: 9px;
-    background: #07111f;
-    border: 1px solid #14263d;
+
+.signal-buy {
+    background:
+        rgba(34, 197, 94, .15);
+
+    color: #4ade80;
+
+    border:
+        1px solid rgba(34, 197, 94, .25);
 }
 
-.detail-label {
+
+.signal-position {
+    background:
+        rgba(56, 189, 248, .13);
+
+    color: #67e8f9;
+
+    border:
+        1px solid rgba(56, 189, 248, .22);
+}
+
+
+.signal-wait {
+    background:
+        rgba(234, 179, 8, .13);
+
+    color: #fde047;
+
+    border:
+        1px solid rgba(234, 179, 8, .22);
+}
+
+
+.signal-sell {
+    background:
+        rgba(239, 68, 68, .14);
+
+    color: #fca5a5;
+
+    border:
+        1px solid rgba(239, 68, 68, .25);
+}
+
+
+/* =========================================================
+   PERFORMANS
+========================================================= */
+
+.positive-number {
+    color: #4ade80;
+}
+
+
+.negative-number {
+    color: #f87171;
+}
+
+
+.neutral-number {
+    color: var(--muted);
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.loading {
+    text-align: center;
+
+    padding: 50px !important;
+
+    color: var(--muted);
+
+    font-size: 13px;
+}
+
+
+.loading::before {
+    content: "◌";
+
     display: block;
-    margin-bottom: 5px;
-    color: #64748b;
-    font-size: 11px;
+
+    margin-bottom: 8px;
+
+    font-size: 25px;
+
+    animation:
+        spin 1s linear infinite;
 }
 
-.detail-value {
-    color: #f8fafc;
-    font-size: 16px;
-    font-weight: 800;
+
+@keyframes spin {
+
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+
 }
+
 
 /* =========================================================
-   MATR AÇIKLAMA
-   ========================================================= */
+   MODAL
+========================================================= */
 
-.matr-explanation {
-    margin-top: 15px;
-    padding: 15px;
-    border-radius: 10px;
-    background: #07111f;
-    border: 1px solid #14263d;
+.modal {
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 500;
+
+    padding: 20px;
+
+    background:
+        rgba(0, 0, 0, .76);
+
+    backdrop-filter: blur(5px);
+
+    overflow-y: auto;
 }
 
-.matr-explanation-title {
-    margin-bottom: 10px;
-    color: #94a3b8;
-    font-size: 12px;
+
+.modal.show {
+    display: block;
+}
+
+
+.modal-box {
+    position: relative;
+
+    width: min(760px, 100%);
+
+    margin: 35px auto;
+
+    padding: 22px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #122137,
+            #0b1728
+        );
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 30px 80px rgba(0, 0, 0, .45);
+}
+
+
+.close-button {
+    position: absolute;
+
+    top: 13px;
+    right: 13px;
+
+    width: 35px;
+    height: 35px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 8px;
+
+    background:
+        #1a2a40;
+
+    color: white;
+
+    font-size: 21px;
+
+    cursor: pointer;
+}
+
+
+.close-button:hover {
+    background: #263b56;
+}
+
+
+/* =========================================================
+   MODAL HEADER
+========================================================= */
+
+.modal-header {
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding-right: 45px;
+
+    margin-bottom: 18px;
+}
+
+
+.modal-header h2 {
+    margin: 0;
+
+    color: var(--blue);
+
+    font-size: 25px;
+}
+
+
+.modal-header p {
+    margin: 5px 0 0;
+
+    color: var(--muted);
+
+    font-size: 13px;
+}
+
+
+.modal-signal {
+    padding-top: 5px;
+}
+
+
+/* =========================================================
+   MODAL SCORE
+========================================================= */
+
+.modal-score {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 18px;
+
+    padding: 15px;
+
+    border-radius: 11px;
+
+    background:
+        rgba(56, 189, 248, .07);
+
+    border:
+        1px solid rgba(56, 189, 248, .15);
+}
+
+
+.modal-score span {
+    color: var(--muted);
+
+    font-size: 11px;
+
     font-weight: 700;
 }
 
-.matr-explanation ul {
-    margin: 0;
-    padding-left: 20px;
+
+.modal-score strong {
+    font-size: 32px;
+
+    color: var(--blue);
 }
 
-.matr-explanation li {
-    margin-bottom: 6px;
+
+/* =========================================================
+   DETAY BÖLÜMLERİ
+========================================================= */
+
+.detail-section {
+    margin-top: 20px;
+}
+
+
+.detail-section h3 {
+    margin: 0 0 10px;
+
+    font-size: 14px;
+
     color: #cbd5e1;
-    font-size: 12px;
 }
+
+
+.detail-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 9px;
+}
+
+
+.detail-card {
+    padding: 12px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 9px;
+
+    background:
+        rgba(7, 17, 31, .52);
+}
+
+
+.detail-card span {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: var(--muted);
+
+    font-size: 10px;
+}
+
+
+.detail-card strong {
+    font-size: 15px;
+}
+
+
+.danger-card {
+    border-color:
+        rgba(239, 68, 68, .25);
+}
+
+
+.danger-card strong {
+    color: #f87171;
+}
+
+
+.profit-card {
+    border-color:
+        rgba(34, 197, 94, .25);
+}
+
+
+.profit-card strong {
+    color: #4ade80;
+}
+
 
 /* =========================================================
-   YÜKLENİYOR
-   ========================================================= */
+   MODAL FOOTER
+========================================================= */
 
-.loading {
-    padding: 50px 20px;
-    text-align: center;
-    color: #64748b;
+.modal-footer {
+    margin-top: 20px;
+
+    padding-top: 13px;
+
+    border-top:
+        1px solid var(--border);
+
+    color: var(--muted);
+
+    line-height: 1.5;
 }
+
 
 /* =========================================================
-   BOŞ SONUÇ
-   ========================================================= */
+   HATA
+========================================================= */
 
-.empty {
-    padding: 50px 20px;
-    text-align: center;
-    color: #64748b;
+.error-box {
+    margin: 20px;
+
+    padding: 15px;
+
+    border-radius: 10px;
+
+    background:
+        rgba(239, 68, 68, .10);
+
+    border:
+        1px solid rgba(239, 68, 68, .25);
+
+    color: #fecaca;
+
+    font-size: 13px;
 }
+
 
 /* =========================================================
    MOBİL
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 900px) {
 
-    .matr-summary {
-        grid-template-columns: repeat(2, 1fr);
+    .summary-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
     }
+
+
+    .controls {
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+
+    .search-box {
+        grid-column:
+            1 / -1;
+    }
+
+
+    .detail-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .container {
+        width:
+            min(100% - 20px, 1400px);
+    }
+
+
+    .topbar .container {
+        min-height: 68px;
+
+        align-items: flex-start;
+
+        padding-top: 11px;
+        padding-bottom: 11px;
+    }
+
+
+    .brand-icon {
+        width: 38px;
+        height: 38px;
+
+        font-size: 18px;
+    }
+
+
+    .brand h1 {
+        font-size: 17px;
+    }
+
+
+    .brand p {
+        font-size: 10px;
+    }
+
+
+    .update {
+        display: none;
+    }
+
+
+    main.container {
+        padding-top: 12px;
+    }
+
+
+    .summary-grid {
+        gap: 8px;
+    }
+
+
+    .summary-card {
+        padding: 13px;
+    }
+
+
+    .summary-card strong {
+        font-size: 22px;
+    }
+
 
     .controls {
         grid-template-columns: 1fr;
     }
 
-    .header-inner {
+
+    .search-box {
+        grid-column: auto;
+    }
+
+
+    .strategy-info {
         align-items: flex-start;
-    }
-}
 
-@media (max-width: 600px) {
+        flex-direction: column;
 
-    .container {
-        padding: 12px;
-    }
-
-    .header-inner {
-        padding: 13px 12px;
-    }
-
-    .logo-title {
-        font-size: 19px;
-    }
-
-    .matr-summary {
-        grid-template-columns: repeat(2, 1fr);
         gap: 8px;
     }
 
-    .matr-card {
+
+    .strategy-info > div {
+        width: 100%;
+
+        padding-right: 0;
+        padding-bottom: 7px;
+
+        border-right: 0;
+
+        border-bottom:
+            1px solid var(--border);
+    }
+
+
+    .strategy-info > div:last-child {
+        padding-bottom: 0;
+
+        border-bottom: 0;
+    }
+
+
+    .table-header {
         padding: 12px;
     }
 
-    .matr-card-value {
-        font-size: 20px;
-    }
 
     .modal {
         padding: 10px;
     }
 
+
     .modal-box {
-        margin-top: 15px;
+        margin: 15px auto;
+
         padding: 16px;
     }
+
+
+    .modal-header h2 {
+        font-size: 21px;
+    }
+
 
     .detail-grid {
         grid-template-columns: 1fr;
@@ -571,24 +1193,29 @@ tbody tr:hover {
 
 }
 
+
 /* =========================================================
    SCROLLBAR
-   ========================================================= */
+========================================================= */
 
 ::-webkit-scrollbar {
     width: 9px;
     height: 9px;
 }
 
+
 ::-webkit-scrollbar-track {
     background: #07111f;
 }
 
+
 ::-webkit-scrollbar-thumb {
-    background: #263b55;
+    background: #263b56;
+
     border-radius: 10px;
 }
 
+
 ::-webkit-scrollbar-thumb:hover {
-    background: #365777;
+    background: #36516f;
 }
