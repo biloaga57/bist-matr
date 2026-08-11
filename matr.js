@@ -70,6 +70,7 @@ function formatPercent(value) {
         return "-";
     }
 
+    
     return (
         n >= 0 ? "+" : ""
     ) + n.toFixed(2) + "%";
